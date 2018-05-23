@@ -1,0 +1,6 @@
+.idea/
+game
+Game.o
+assets/
+cmake-build-debug/
+CMakeLists.txt
