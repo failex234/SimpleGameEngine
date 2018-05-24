@@ -173,6 +173,7 @@ void Game::draw(void) {
     }
 
     drawCircle(window.getSize().x / 2, window.getSize().y / 2, 100, sf::Color::Black);
+    drawCircle(200, 200, 200, sf::Color::Red);
 
     window.draw(player_sprite);
     window.draw(render.data(), render.size(), sf::Points);
@@ -181,12 +182,12 @@ void Game::draw(void) {
 
 }
 
-void Game::drawCircle(int x, int y, int rad, sf::Color color) {
+void Game::drawCircle(float x, float y, int rad, sf::Color color) {
     //Add top most point of circle to render array
-    render.push_back(sf::Vertex({x, y + rad}, color));
+    render.push_back(sf::Vertex({x, y - rad}, color));
 
     //Calculate all points from top-most to right-most point
-    for (int i = 1; i <= rad; i++) {
+    for (float i = 1; i <= rad; i+=.01) {
         render.push_back(sf::Vertex({x + i, y - calculateY(i, rad)}, color));
     }
 
@@ -194,23 +195,23 @@ void Game::drawCircle(int x, int y, int rad, sf::Color color) {
     render.push_back(sf::Vertex({x + rad, y}, color));
 
     //Calculate all points from right-most to bottom-most point
-    for (int i = 1; i <= rad; i++) {
-        render.push_back(sf::Vertex({x + calculateX(i, rad), y + i}, color));
+    for (float i = 1; i <= rad; i+=.01) {
+        render.push_back(sf::Vertex({x + i, y + calculateY(i, rad)}, color));
     }
 
     //Add bottom-most point to render array
-    render.push_back(sf::Vertex({x, y - rad}, color));
+    render.push_back(sf::Vertex({x, y + rad}, color));
 
     //Calculate all points from bottom-most to left-most point
-    for (int i = 1; i <= rad; i++) {
-        render.push_back(sf::Vertex({x - i, y + calculateY(-i, rad)}, color));
+    for (float i = 1; i <= rad; i+=.01) {
+        render.push_back(sf::Vertex({x - i, y + calculateY(i, rad)}, color));
     }
 
     //Add left-most point to render array
     render.push_back(sf::Vertex({x - rad, y}, color));
 
-    for (int i = 1; i <= rad; i++) {
-        render.push_back(sf::Vertex({x - calculateX(-i, rad), y - i}, color));
+    for (float i = 1; i <= rad; i+=.01) {
+        render.push_back(sf::Vertex({x - i, y - calculateY(i, rad)}, color));
     }
 
 }
@@ -221,26 +222,11 @@ void Game::drawCircle(int x, int y, int rad, sf::Color color) {
  * @param rad radius
  * @return point y
  */
-int Game::calculateY(int x, int rad) {
+int Game::calculateY(float x, int rad) {
     if (rad != 0) {
         return sqrt(pow(rad, 2) - pow(x, 2));
-    } else {
-        return 1337;
     }
-}
-
-/**
- * Calculate X for a circle using the Pythagorean theorem
- * @param y point y
- * @param rad radius
- * @return point x
- */
-int Game::calculateX(int y, int rad) {
-    if (rad != 0) {
-        return sqrt(pow(rad, 2) - pow(y, 2));
-    } else {
-        return 1337;
-    }
+    return -1;
 }
 
 void Game::checkVals(void) {

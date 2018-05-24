@@ -15,9 +15,8 @@ private:
     void checkCollision( void );
     void checkVals( void );
     void draw( void );
-    void drawCircle( int x, int y, int rad, sf::Color color );
-    int calculateY( int x, int rad );
-    int calculateX( int y, int rad );
+    void drawCircle( float x, float y, int rad, sf::Color color );
+    int calculateY( float x, int rad );
 
 
     Coin randomCoin( void );
