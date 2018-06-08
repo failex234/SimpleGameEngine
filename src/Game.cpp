@@ -9,7 +9,9 @@
 Game::Game(uint width, uint height, std::string title) : window({width, height}, title,
                                                                 sf::Style::Titlebar | sf::Style::Close) {
 
-    window.setFramerateLimit(30);
+    window.setFramerateLimit(60);
+
+    //drawRectangle(50, 50, 50, 50, sf::Color::Red);
 
     if (player_texture.loadFromFile("assets/rocket.png")) {
         player_texture.setSmooth(true);
@@ -40,6 +42,7 @@ void Game::run(void) {
 
     coinsrendered = false;
 
+    performanceclock.restart();
     while (window.isOpen()) {
         render.clear();
         readInputs();
@@ -60,17 +63,6 @@ void Game::readInputs(void) {
     }
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
-        if (player.angle < 270) {
-            for (int i = player.angle; i <= 270; i++) {
-                player.angle = i;
-                sf::milliseconds(500);
-            }
-        } else {
-            for (int i = player.angle; i >= 270; i--) {
-                player.angle = i;
-                sf::milliseconds(500);
-            }
-        }
         //player.angle = 270.0f;
         if (player.y >= 40) {
             player.y -= 20;
@@ -145,6 +137,13 @@ void Game::checkCollision(void) {
 
 void Game::draw(void) {
 
+    if (performanceclock.getElapsedTime().asMilliseconds() >= 1000) {
+        performanceclock.restart();
+        performance = iterations - olditeration;
+
+        olditeration = iterations;
+    }
+
     window.clear(sf::Color::White);
     render.clear();
 
@@ -153,7 +152,10 @@ void Game::draw(void) {
                    "\nY: " + std::to_string(player.y) +
                    "\nAngle: " + std::to_string(player.angle) +
                    "\nRendered Coins: " + std::to_string(num_coins) +
-                   "\nPoints: " + std::to_string(points));
+                   "\nPoints: " + std::to_string(points) +
+                   "\nVertices: " + std::to_string(vertices) +
+                   "\nIterations; " + std::to_string(iterations) +
+                   "\nPerformance: " + std::to_string(performance) + " it/s");
 
     window.draw(text);
 
@@ -172,13 +174,24 @@ void Game::draw(void) {
         window.draw(coin.sprite);
     }
 
-    drawCircle(window.getSize().x / 2, window.getSize().y / 2, 100, sf::Color::Black);
-    drawCircle(200, 200, 200, sf::Color::Red);
+    if (iterations % 1000 == 0) {
+        renderstatic.clear();
+        //Static draw function calls here
+
+        drawCircle(200, 200, 200, sf::Color::Red, true);
+        drawCircle(window.getSize().x / 2, window.getSize().y / 2, 200, sf::Color::Black, true);
+        //drawCircle(rand() % window.getSize().x, rand() % window.getSize().y, 200, sf::Color::Green);
+        drawRectangle(450, 450, 200, 100, sf::Color::Red, true);
+    }
+
+    vertices += render.size();
 
     window.draw(player_sprite);
     window.draw(render.data(), render.size(), sf::Points);
+    window.draw(renderstatic.data(), renderstatic.size(), sf::Points);
 
     window.display();
+    iterations++;
 
 }
 
@@ -187,7 +200,7 @@ void Game::drawCircle(float x, float y, int rad, sf::Color color) {
     render.push_back(sf::Vertex({x, y - rad}, color));
 
     //Calculate all points from top-most to right-most point
-    for (float i = 1; i <= rad; i+=.01) {
+    for (float i = 1; i <= rad; i += STEPS) {
         render.push_back(sf::Vertex({x + i, y - calculateY(i, rad)}, color));
     }
 
@@ -195,7 +208,7 @@ void Game::drawCircle(float x, float y, int rad, sf::Color color) {
     render.push_back(sf::Vertex({x + rad, y}, color));
 
     //Calculate all points from right-most to bottom-most point
-    for (float i = 1; i <= rad; i+=.01) {
+    for (float i = 1; i <= rad; i += STEPS) {
         render.push_back(sf::Vertex({x + i, y + calculateY(i, rad)}, color));
     }
 
@@ -203,21 +216,61 @@ void Game::drawCircle(float x, float y, int rad, sf::Color color) {
     render.push_back(sf::Vertex({x, y + rad}, color));
 
     //Calculate all points from bottom-most to left-most point
-    for (float i = 1; i <= rad; i+=.01) {
+    for (float i = 1; i <= rad; i += STEPS) {
         render.push_back(sf::Vertex({x - i, y + calculateY(i, rad)}, color));
     }
 
     //Add left-most point to render array
     render.push_back(sf::Vertex({x - rad, y}, color));
 
-    for (float i = 1; i <= rad; i+=.01) {
+    for (float i = 1; i <= rad; i += STEPS) {
         render.push_back(sf::Vertex({x - i, y - calculateY(i, rad)}, color));
+    }
+
+}
+
+void Game::drawCircle(float x, float y, int rad, sf::Color color, bool stc) {
+
+    if (stc) {
+        //Add top most point of circle to render array
+        renderstatic.push_back(sf::Vertex({x, y - rad}, color));
+
+        //Calculate all points from top-most to right-most point
+        for (float i = 1; i <= rad; i += STEPS) {
+            renderstatic.push_back(sf::Vertex({x + i, y - calculateY(i, rad)}, color));
+        }
+
+        //Add right-most point to render array
+        renderstatic.push_back(sf::Vertex({x + rad, y}, color));
+
+        //Calculate all points from right-most to bottom-most point
+        for (float i = 1; i <= rad; i += STEPS) {
+            renderstatic.push_back(sf::Vertex({x + i, y + calculateY(i, rad)}, color));
+        }
+
+        //Add bottom-most point to render array
+        renderstatic.push_back(sf::Vertex({x, y + rad}, color));
+
+        //Calculate all points from bottom-most to left-most point
+        for (float i = 1; i <= rad; i += STEPS) {
+            renderstatic.push_back(sf::Vertex({x - i, y + calculateY(i, rad)}, color));
+        }
+
+        //Add left-most point to render array
+        renderstatic.push_back(sf::Vertex({x - rad, y}, color));
+
+        for (float i = 1; i <= rad; i += STEPS) {
+            renderstatic.push_back(sf::Vertex({x - i, y - calculateY(i, rad)}, color));
+        }
+    } else {
+        drawCircle(x, y, rad, color);
     }
 
 }
 
 /**
  * Calculate Y for a circle using the Pythagorean theorem
+ * rad^2 - x^2 = y^2
  * @param x point x
  * @param rad radius
  * @return point y
@@ -227,6 +280,73 @@ int Game::calculateY(float x, int rad) {
         return sqrt(pow(rad, 2) - pow(x, 2));
     }
     return -1;
+}
+
+/**
+ * Draw a rectangle where x and y are the center of the rectangle
+ * @param x X-coordinate
+ * @param y Y-coordinate
+ * @param width width of rectangle
+ * @param height height of rectangle
+ * @param color color of rectangle
+ */
+void Game::drawRectangle(float x, float y, float width, float height, sf::Color color) {
+
+    //Draw the top border
+    for (float i = 0; i <= width; i += STEPS) {
+        render.push_back(sf::Vertex({(x - (0.5 * width)) + i, y - (0.5 * height)}, color));
+    }
+
+    //Draw the right border
+    for (float i = 0; i <= height; i += STEPS) {
+        render.push_back(sf::Vertex({x + (0.5 * width), y - (0.5 * height) + i}, color));
+    }
+
+    //Draw the bottom border
+    for (float i = 0; i <= width; i += STEPS) {
+        render.push_back(sf::Vertex({x - (0.5 * width) + i, y + (0.5 * height)}, color));
+    }
+
+    //Draw the left border
+    for (float i = 0; i <= height; i += STEPS) {
+        render.push_back(sf::Vertex({x - (0.5 * width), y - (0.5 * height) + i}, color));
+    }
+}
+
+/**
+ * Draw a rectangle where x and y are the center of the rectangle
+ * @param x X-coordinate
+ * @param y Y-coordinate
+ * @param width width of rectangle
+ * @param height height of rectangle
+ * @param color color of rectangle
+ */
+void Game::drawRectangle(float x, float y, float width, float height, sf::Color color, bool stc) {
+
+    if (stc) {
+
+        //Draw the top border
+        for (float i = 0; i <= width; i += STEPS) {
+            renderstatic.push_back(sf::Vertex({(x - (0.5 * width)) + i, y - (0.5 * height)}, color));
+        }
+
+        //Draw the right border
+        for (float i = 0; i <= height; i += STEPS) {
+            renderstatic.push_back(sf::Vertex({x + (0.5 * width), y - (0.5 * height) + i}, color));
+        }
+
+        //Draw the bottom border
+        for (float i = 0; i <= width; i += STEPS) {
+            renderstatic.push_back(sf::Vertex({x - (0.5 * width) + i, y + (0.5 * height)}, color));
+        }
+
+        //Draw the left border
+        for (float i = 0; i <= height; i += STEPS) {
+            renderstatic.push_back(sf::Vertex({x - (0.5 * width), y - (0.5 * height) + i}, color));
+        }
+    } else {
+        drawRectangle(x, y, width, height, color);
+    }
 }
 
 void Game::checkVals(void) {
